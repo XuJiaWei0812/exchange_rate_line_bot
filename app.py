@@ -53,6 +53,23 @@ def create_rich_menu():
         line_bot_api = MessagingApi(api_client)
         line_bot_blob_api = MessagingApiBlob(api_client)
 
+        # 首先刪除現有的所有 rich menus
+        headers = {
+            "Authorization": "Bearer " + os.getenv("CHANNEL_ACCESS_TOKEN"),
+        }
+        # 獲取現有的 rich menu 列表
+        rich_menu_list = requests.get(
+            "https://api.line.me/v2/bot/richmenu/list",
+            headers=headers
+        ).json()
+        
+        # 刪除所有現有的 rich menus
+        for rich_menu in rich_menu_list.get("richmenus", []):
+            requests.delete(
+                f"https://api.line.me/v2/bot/richmenu/{rich_menu['richMenuId']}",
+                headers=headers
+            )
+
         # Create rich menu
         headers = {
             "Authorization": "Bearer " + os.getenv("CHANNEL_ACCESS_TOKEN"),
@@ -66,7 +83,7 @@ def create_rich_menu():
             "areas": [
                 {
                     "bounds": {"x": 0, "y": 0, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "人民幣匯率"},
+                    "action": {"type": "message", "text": "人民幣2匯率"},
                 },
                 {
                     "bounds": {"x": 834, "y": 0, "width": 833, "height": 843},
@@ -107,6 +124,7 @@ def create_rich_menu():
                 _headers={"Content-Type": "image/jpeg"},
             )
 
+        # 設定為預設選單
         line_bot_api.set_default_rich_menu(rich_menu_id)
 
 
