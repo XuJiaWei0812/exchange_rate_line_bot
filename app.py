@@ -53,79 +53,54 @@ def create_rich_menu():
         line_bot_api = MessagingApi(api_client)
         line_bot_blob_api = MessagingApiBlob(api_client)
 
-        # 首先刪除現有的所有 rich menus
         headers = {
-            "Authorization": "Bearer " + os.getenv("CHANNEL_ACCESS_TOKEN"),
+            "Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN,
+            "Content-Type": "application/json",
         }
-        # 獲取現有的 rich menu 列表
-        rich_menu_list = requests.get(
-            "https://api.line.me/v2/bot/richmenu/list",
-            headers=headers
-        ).json()
-        
+
         # 刪除所有現有的 rich menus
+        rich_menu_list = requests.get("https://api.line.me/v2/bot/richmenu/list", headers=headers).json()
         for rich_menu in rich_menu_list.get("richmenus", []):
-            requests.delete(
+            delete_response = requests.delete(
                 f"https://api.line.me/v2/bot/richmenu/{rich_menu['richMenuId']}",
                 headers=headers
             )
 
-        # Create rich menu
-        headers = {
-            "Authorization": "Bearer " + os.getenv("CHANNEL_ACCESS_TOKEN"),
-            "Content-Type": "application/json",
-        }
+        # 新的 rich menu 資料
         body = {
             "size": {"width": 2500, "height": 1686},
             "selected": True,
             "name": "匯率查詢選單",
             "chatBarText": "點擊查詢匯率",
             "areas": [
-                {
-                    "bounds": {"x": 0, "y": 0, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "人民幣匯率"},
-                },
-                {
-                    "bounds": {"x": 834, "y": 0, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "美金匯率"},
-                },
-                {
-                    "bounds": {"x": 1663, "y": 0, "width": 834, "height": 843},
-                    "action": {"type": "message", "text": "日幣匯率"},
-                },
-                {
-                    "bounds": {"x": 0, "y": 843, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "韓幣匯率"},
-                },
-                {
-                    "bounds": {"x": 834, "y": 843, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "泰銖匯率"},
-                },
-                {
-                    "bounds": {"x": 1662, "y": 843, "width": 838, "height": 843},
-                    "action": {"type": "message", "text": "歐元匯率"},
-                },
+                {"bounds": {"x": 0, "y": 0, "width": 833, "height": 843}, "action": {"type": "message", "text": "人民幣匯率"}},
+                {"bounds": {"x": 834, "y": 0, "width": 833, "height": 843}, "action": {"type": "message", "text": "美金匯率"}},
+                {"bounds": {"x": 1663, "y": 0, "width": 834, "height": 843}, "action": {"type": "message", "text": "日幣匯率"}},
+                {"bounds": {"x": 0, "y": 843, "width": 833, "height": 843}, "action": {"type": "message", "text": "韓幣匯率"}},
+                {"bounds": {"x": 834, "y": 843, "width": 833, "height": 843}, "action": {"type": "message", "text": "泰銖匯率"}},
+                {"bounds": {"x": 1662, "y": 843, "width": 838, "height": 843}, "action": {"type": "message", "text": "歐元匯率"}},
             ],
         }
 
-        response = requests.post(
-            "https://api.line.me/v2/bot/richmenu",
-            headers=headers,
-            data=json.dumps(body).encode("utf-8"),
-        )
-        response = response.json()
-        rich_menu_id = response["richMenuId"]
+        # 創建新的 rich menu
+        response = requests.post("https://api.line.me/v2/bot/richmenu", headers=headers, data=json.dumps(body))
+        if response.status_code == 200:
+            rich_menu_id = response.json().get("richMenuId")
+            
+            # 上傳 rich menu 圖片
+            with open("static/richmenu.jpg", "rb") as image:
+                image_response = requests.post(
+                    f"https://api.line.me/v2/bot/richmenu/{rich_menu_id}/content",
+                    headers={"Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN, "Content-Type": "image/jpeg"},
+                    data=image
+                )
 
-        # Upload rich menu image
-        with open("static/richmenu.jpg", "rb") as image:
-            line_bot_blob_api.set_rich_menu_image(
-                rich_menu_id=rich_menu_id,
-                body=bytearray(image.read()),
-                _headers={"Content-Type": "image/jpeg"},
+            # 設置為預設選單
+            default_response = requests.post(
+                f"https://api.line.me/v2/bot/user/all/richmenu/{rich_menu_id}",
+                headers={"Authorization": "Bearer " + CHANNEL_ACCESS_TOKEN}
             )
 
-        # 設定為預設選單
-        line_bot_api.set_default_rich_menu(rich_menu_id)
 
 
 def get_exchange_rate(currency_code, currency_name):
