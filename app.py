@@ -83,7 +83,7 @@ def create_rich_menu():
             "areas": [
                 {
                     "bounds": {"x": 0, "y": 0, "width": 833, "height": 843},
-                    "action": {"type": "message", "text": "人民幣2匯率"},
+                    "action": {"type": "message", "text": "人民幣匯率"},
                 },
                 {
                     "bounds": {"x": 834, "y": 0, "width": 833, "height": 843},
